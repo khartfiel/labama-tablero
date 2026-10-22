@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>La Bamba Scoreboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: brand-pink storefront header with striped awning, sticky period picker, store summary then team cards, season chart. */
+:root{
+  --bg:#EFE0BF;--paper:#FFFFFF;--ink:#4A0F2C;--muted:#765462;--line:#D8C59C;--track:#F1E7D2;--navy:#C2185B;--shadow:0 2px 0 rgba(120,20,60,.08),0 8px 20px -10px rgba(120,20,60,.28);
+  --pink:#1E3A8A;--pink-deep:#14234A;--teal:#E8336E;--orange:#EE8E1E;--purple:#7A4BC7;
+  --awn-a:#E8336E;--awn-b:#FFF7EE;
+  --ok:#1E8A4C;--ok-bg:#DFF3E7;--warn:#A86400;--warn-bg:#FCEFD6;--bad:#C0283B;--bad-bg:#FBE3E6;
+  --display:"Lilita One","Arial Rounded MT Bold","Trebuchet MS",sans-serif;
+  --sans:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#22091A;--paper:#3A1229;--ink:#FAF3E3;--muted:#CDB3C0;--line:#5E2445;--track:#4B1B36;--navy:#FF6B9C;--shadow:0 8px 20px -10px rgba(0,0,0,.6);
+  --pink:#7FA8FF;--teal:#FF6B9C;--orange:#FFAA4A;--purple:#A27CF0;
+  --ok:#5FD08C;--ok-bg:#183626;--warn:#F4B860;--warn-bg:#3A2C13;--bad:#FF7F8E;--bad-bg:#3D1C22;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#22091A;--paper:#3A1229;--ink:#FAF3E3;--muted:#CDB3C0;--line:#5E2445;--track:#4B1B36;--navy:#FF6B9C;--shadow:0 8px 20px -10px rgba(0,0,0,.6);
+  --pink:#7FA8FF;--teal:#FF6B9C;--orange:#FFAA4A;--purple:#A27CF0;
+  --ok:#5FD08C;--ok-bg:#183626;--warn:#F4B860;--warn-bg:#3A2C13;--bad:#FF7F8E;--bad-bg:#3D1C22;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:#C2185B}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.num{font-variant-numeric:tabular-nums}
+
+/* header */
+.top{background:#C2185B;background-image:radial-gradient(circle at 85% -20%,#E5468A 0,transparent 55%);color:#FAF3E3}
+.top .wrap{padding-block:22px 18px}
+.brand{font-weight:700;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:#B9D3FF}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(40px,8vw,68px);line-height:.95;margin:10px 0 8px;text-wrap:balance}
+.period{font-size:17px;color:#E9DFC8;font-weight:600}
+.clock{display:inline-flex;align-items:center;gap:8px;margin-top:12px;background:rgba(250,243,227,.12);border:1px solid rgba(250,243,227,.25);border-radius:999px;padding:6px 14px;font-weight:700;font-size:15px;color:#FAF3E3;font-variant-numeric:tabular-nums}
+.clock::before{content:"";width:8px;height:8px;border-radius:50%;background:#5FD08C;box-shadow:0 0 0 3px rgba(95,208,140,.25)}
+.awning{height:30px;background:repeating-linear-gradient(90deg,var(--awn-a) 0 36px,var(--awn-b) 36px 72px);
+  -webkit-mask:radial-gradient(18px at 18px 12px,#000 98%,transparent) 0 0/36px 100% repeat-x,linear-gradient(#000 0 12px,transparent 12px);
+  mask:radial-gradient(18px at 18px 12px,#000 98%,transparent) 0 0/36px 100% repeat-x,linear-gradient(#000 0 12px,transparent 12px)}
+
+/* picker */
+.picker{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.picker .wrap{padding-block:12px}
+.tabs{display:flex;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px;width:max-content;max-width:100%;overflow-x:auto}
+.tab{border:0;background:transparent;border-radius:999px;padding:7px 16px;font-weight:700;cursor:pointer;white-space:nowrap;color:var(--muted)}
+.tab[aria-pressed="true"]{background:var(--navy);color:var(--bg)}
+.pickrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.selwrap{display:flex;align-items:center;gap:8px;flex:1 1 220px;min-width:0}
+.selwrap label{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+select{flex:1;min-width:0;max-width:340px;font:inherit;font-weight:700;color:var(--ink);background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;cursor:pointer}
+select:hover{border-color:var(--teal)}
+.chips{display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;scrollbar-width:none}
+/* calendar */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.day{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 10px;display:grid;gap:6px;align-content:start;min-height:132px}
+.day .dw{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.day .dn{font-family:var(--display);font-size:26px;line-height:1}
+.day .amt{font-weight:800;font-size:16px}
+.day .dp{font-size:13px;color:var(--muted)}
+.day .bar{height:7px}
+.day.best{border:2px solid var(--orange)}
+.day.today{box-shadow:inset 0 0 0 2px var(--teal)}
+.day.future{background:transparent;border-style:dashed}
+.day.future .dn,.day.future .amt{color:var(--muted)}
+.tag{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--orange)}
+.calfoot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;margin-top:12px;font-size:14px;color:var(--muted)}
+@media (max-width:700px){
+  .cal{grid-template-columns:1fr;gap:6px}
+  .day{min-height:0;grid-template-columns:52px 1fr auto;align-items:center;gap:2px 12px;padding:10px 14px}
+  .day .dw{grid-column:1;grid-row:1}.day .dn{grid-column:1;grid-row:2}
+  .day .amt{grid-column:2;grid-row:1}.day .bar{grid-column:2;grid-row:2}
+  .day .dp,.day .tag{grid-column:3;text-align:right}
+}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1.5px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 13px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+.chip:hover{border-color:var(--teal)}
+.chip[aria-pressed="true"]{border-color:var(--teal);background:var(--teal);color:#fff}
+
+main{padding-block:24px 48px;display:grid;gap:34px}
+h2{font-family:var(--display);font-weight:400;font-size:30px;line-height:1.1;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 16px;font-size:15px}
+
+/* store summary */
+.store{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.store{grid-template-columns:1fr}}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:20px}
+.big{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+.big .v{font-family:var(--display);font-size:clamp(44px,9vw,64px);line-height:1;color:var(--ink)}
+.big .of{color:var(--muted);font-size:16px}
+.meter{position:relative;height:22px;border-radius:11px;background:var(--track);margin:18px 0 8px;overflow:hidden}
+.meter .fill{position:absolute;inset:0 auto 0 0;border-radius:11px;background:linear-gradient(90deg,var(--teal),var(--pink))}
+.meter .pace{position:absolute;top:0;bottom:0;width:3px;background:var(--ink);opacity:.6}
+.meterlab{display:flex;justify-content:space-between;gap:10px;font-size:14px;color:var(--muted)}
+.pill{display:inline-block;padding:3px 11px;border-radius:999px;font-weight:700;font-size:14px;white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.facts{display:grid;gap:0}
+.fact{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 0;border-top:1px dashed var(--line)}
+.fact:first-child{border-top:0;padding-top:0}
+.fact span{color:var(--muted);font-weight:600;font-size:14px;text-transform:uppercase;letter-spacing:.05em}
+.fact b{font-family:var(--display);font-weight:400;font-size:26px;line-height:1}
+.fact b.pink{color:var(--pink)}
+.fact small{display:block;font-size:12px;color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0}
+
+/* team */
+.team{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:16px 18px 18px;display:grid;gap:10px;align-content:start}
+.card .hd{display:flex;align-items:center;gap:10px}
+.dot{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#fff;font-family:var(--display);font-size:19px;flex:none}
+.card .nm{font-family:var(--display);font-size:24px;line-height:1}
+.card .rk{margin-left:auto;font-size:13px;font-weight:700;color:var(--muted)}
+.card .rk.first{color:var(--orange)}
+.pct{font-family:var(--display);font-size:38px;line-height:1}
+.bar{height:10px;border-radius:5px;background:var(--track);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:5px}
+.rows{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:15px}
+.rows dt{color:var(--muted)}
+.rows dd{margin:0;text-align:right;font-weight:700}
+.note{font-size:14px;color:var(--muted);margin-top:12px}
+
+/* tables */
+.tablewrap{overflow-x:auto;background:var(--paper);border:1px solid var(--line);border-radius:18px}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:15px}
+th,td{padding:11px 16px;text-align:right;border-top:1px solid var(--line)}
+th{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;border-top:0}
+th:first-child,td:first-child{text-align:left}
+td:first-child{font-weight:600}
+
+/* chart */
+.chart svg{width:100%;height:auto;display:block}
+.chart .ax{fill:var(--muted);font-size:12px;font-family:var(--sans)}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .lbl{fill:var(--ink);font-size:12px;font-weight:700;font-family:var(--sans)}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:14px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;margin-right:6px;vertical-align:0}
+
+.empty{background:var(--paper);border:2px dashed var(--line);border-radius:18px;padding:26px 22px;text-align:center}
+.empty h3{font-family:var(--display);font-weight:400;font-size:26px;margin:0 0 6px;color:var(--pink)}
+.empty p{margin:0 auto;max-width:52ch;color:var(--muted)}
+
+/* summary copy */
+.copybar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{border:0;background:var(--teal);color:#fff;font-weight:700;border-radius:999px;padding:9px 18px;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.copied{color:var(--ok);font-weight:600;font-size:14px}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--muted);font-weight:600;font-size:14px}
+pre{white-space:pre-wrap;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px;font-size:14px;font-family:var(--sans);margin:10px 0 0}
+/* notes */
+.board{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px}
+@media (max-width:760px){.board{grid-template-columns:1fr}}
+.notes{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.notes li{background:var(--paper);border:1px solid var(--line);border-left:6px solid var(--orange);border-radius:12px;padding:12px 14px;font-weight:600}
+.notes li small{display:block;font-weight:500;color:var(--muted);font-size:13px;margin-top:2px}
+.today-off{background:var(--pink);color:#fff;border-radius:18px;padding:16px 18px}
+.today-off .dw{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.85}
+.today-off b{display:block;font-family:var(--display);font-weight:400;font-size:26px;line-height:1.15;margin-top:4px}
+.sched{width:100%;min-width:520px}
+.sched td,.sched th{text-align:left;padding:9px 12px}
+.sched tr.is-today td{background:var(--ok-bg)}
+.sched tr.is-today td:first-child{color:var(--ok)}
+.offtag{display:inline-block;background:var(--bad-bg);color:var(--bad);border-radius:999px;padding:1px 9px;font-weight:700;font-size:13px;margin:2px 4px 2px 0}
+.ontag{display:inline-block;background:var(--track);border-radius:999px;padding:1px 9px;font-weight:600;font-size:13px;margin:2px 4px 2px 0}
+.pending{color:var(--muted);font-style:italic}
+.panel,.card,.tablewrap,.day:not(.future),.notes li,.tabs,select,.chip{box-shadow:var(--shadow)}
+/* challenge */
+.ch-head{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding-bottom:14px;border-bottom:1px dashed var(--line)}
+@media (max-width:640px){.ch-head{grid-template-columns:1fr}}
+.ch-head span{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.ch-head b{font-family:var(--display);font-weight:400;font-size:22px;line-height:1.15}
+.ch-prize b{color:var(--teal)}
+.ch-list{list-style:none;margin:0;padding:0;display:grid}
+.ch-row{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--line)}
+.ch-list .ch-row:first-child{border-top:0}
+.ch-place{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:20px;background:var(--track);color:var(--muted)}
+.ch-place.p1{background:#F2B705;color:#3B2A00}
+.ch-place.p2{background:#C9CED6;color:#2A2F38}
+.ch-place.p3{background:#D08A4E;color:#3A1E08}
+.ch-place.p4{background:var(--track);color:var(--ink)}
+.ch-top{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px}
+.ch-top b{font-size:17px}
+.ch-top span{color:var(--muted);font-weight:600;font-size:14px}
+.ch-pct{font-weight:800;text-align:right}
+.ch-req{font-size:13px;color:var(--muted);margin-top:6px}
+.slots{display:grid;grid-template-columns:repeat(21,minmax(0,1fr));gap:4px}
+@media (max-width:640px){.slots{grid-template-columns:repeat(11,minmax(0,1fr))}}
+.slots i{aspect-ratio:1;max-width:100%;border-radius:50%;border:2px dashed var(--line);background:transparent}
+.slots i.on{border-style:solid}
+.ch-row.lead{background:linear-gradient(90deg,rgba(242,183,5,.14),transparent 70%);border-radius:12px}
+@media (prefers-reduced-motion:no-preference){.slots i.on{animation:pop .4s ease both}}
+@keyframes pop{from{transform:scale(.4)}to{transform:scale(1)}}
+
+/* cocina */
+.rank{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.rank li{display:grid;grid-template-columns:30px minmax(0,1.1fr) minmax(0,2fr) 70px;align-items:center;gap:12px;padding:8px 0;border-top:1px dashed var(--line)}
+.rank li:first-child{border-top:0}
+.rn{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--track);font-weight:800;font-size:14px}
+.rank li.top1 .rn{background:var(--orange);color:#fff}
+.pn{font-weight:700;min-width:0}
+.pn small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.pb{position:relative;height:14px;background:var(--track);border-radius:7px}
+.pb i{position:absolute;inset:0 auto 0 0;border-radius:7px;background:var(--teal)}
+.rank li.top1 .pb i{background:var(--orange)}
+.pb em{position:absolute;top:-5px;bottom:-5px;width:3px;margin-left:-1px;background:var(--ink);border-radius:2px}
+.rank b{text-align:right;font-size:18px;font-weight:800}
+.rank b small{display:block;font-size:11px;font-weight:600;color:var(--muted)}
+@media (max-width:560px){.rank li{grid-template-columns:30px minmax(0,1fr) auto;row-gap:4px}.rank .pb{grid-column:2/4;grid-row:2}}
+.kstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.kstat{display:grid;gap:4px}
+.kstat span{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.kstat b{font-family:var(--display);font-weight:400;font-size:32px;line-height:1.05}
+.kstat b.sm{font-family:var(--sans);font-weight:800;font-size:18px}
+.kstat small{color:var(--muted);font-size:13px}
+.kcal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+@media (max-width:900px){.kcal{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
+.kday{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:var(--shadow);min-width:0}
+.kday.none{background:transparent;border-style:dashed;box-shadow:none}
+.kday.today{outline:2px solid var(--teal);outline-offset:-2px}
+.kh{display:flex;align-items:baseline;gap:6px;margin-bottom:6px}
+.kh .dw{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.kh .dn{font-family:var(--display);font-size:22px;line-height:1}
+.kh .kt{margin-left:auto;font-size:12px;font-weight:700;color:var(--muted)}
+.kday ul{list-style:none;margin:0;padding:0;font-size:14px}
+.kday li{display:flex;justify-content:space-between;gap:6px;padding:3px 0;border-top:1px dashed var(--line)}
+.kday li:first-child{border-top:0}
+.kday li span{min-width:0;overflow-wrap:anywhere}
+.kday p{margin:0;color:var(--muted);font-size:14px}
+.kmonths{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+@media (max-width:400px){.kmonths{grid-template-columns:1fr}}
+.kmh{font-family:var(--display);font-weight:400;font-size:24px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.kmh small{font-family:var(--sans);font-size:15px;font-weight:700;color:var(--muted)}
+.rk2{font-size:12px;font-weight:700;color:var(--muted)}
+tr.trow td{font-weight:800;background:var(--track)}
+footer{color:var(--muted);font-size:13px}
+footer .wrap{padding-block:0 40px}
+@media (prefers-reduced-motion:no-preference){.fill,.bar i{transition:width .5s ease}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">La Bamba · Ice Cream and Snacks</div>
+    <h1 id="h1">Sales Update</h1>
+    <div class="period" id="period"></div>
+    <div class="clock" id="clock" aria-live="off"></div>
+  </div>
+  <div class="awning" aria-hidden="true"></div>
+</header>
+
+<nav class="picker" aria-label="Elegir vista y periodo">
+  <div class="wrap">
+    <div class="pickrow">
+      <div class="tabs" role="group" aria-label="Vista">
+        <button class="tab" id="tab-semana" data-v="semana">Semana</button>
+        <button class="tab" id="tab-mes" data-v="mes">Mes</button>
+        <button class="tab" id="tab-cocina" data-v="cocina">Cocina</button>
+      </div>
+      <div class="selwrap"><label for="sel" id="sellab">Semana</label><select id="sel"></select></div>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap" id="view"></main>
+<footer><div class="wrap" id="foot"></div></footer>
+
+<script>
+/* ===== DATOS: Claude actualiza solo esta sección ===== */
+const ULTIMA_ACTUALIZACION = "2026-10-22";
+
+// Colores y emoji por persona (para tarjetas y resumen de texto)
+const EQUIPO = {
+  Loreny:  {color:"pink",   emoji:"💗"},
+  Pamela:  {color:"teal",   emoji:"💜"},
+  Mayreni: {color:"orange", emoji:"🧡"},
+  Seleni:  {color:"purple", emoji:"💖"},
+  Valeria: {color:"purple", emoji:"🤍"}
+};
+
+// Metas mensuales. Clave = "AAAA-MM". Cada semana de ese mes toma 1/4 de la meta.
+// equipo es opcional: si se pone, la meta semanal de cada persona también es 1/4 de la suya.
+// Ejemplo: "2026-11": {tienda: 45000, equipo:{Loreny: 13000, Pamela: 14000, Mayreni: 11000}}
+const METAS_MENSUALES = {
+};
+
+// Notas para el equipo. Se agregan o quitan según indique el gerente.
+const NOTAS = [
+  {texto:"Hoy es Torta Tuesday 🎂", fecha:"2026-10-20"},  // fecha = solo se muestra ese día
+  {texto:"Recuerden el challenge de las crepas"}           // sin fecha = se queda hasta que se quite
+];
+
+// Horario de front staff, lunes→domingo. trabajan = [nombre, horas]; off = quién está libre.
+const HORARIO = [
+  {trabajan:[["Loreny","9:45am–5pm"],["Pamela","1pm–10pm"],["Mayreni","4pm–10pm"]], off:[]},          // Lun
+  {trabajan:[["Loreny","9:45am–10pm"],["Pamela","4:45pm–10pm"]], off:["Mayreni"]},                   // Mar
+  {trabajan:[["Loreny","9:45am–5pm"],["Pamela","3pm–10pm"],["Mayreni","4pm–10pm"]], off:[]},          // Mié
+  {trabajan:[["Loreny","9:45am–5pm"],["Mayreni","4pm–10pm"]], off:["Pamela"]},                        // Jue
+  {trabajan:[["Loreny","9:45am–4pm"],["Pamela","3pm–10pm"]], off:["Mayreni"]},                        // Vie
+  {trabajan:[["Loreny","9:45am–3pm"],["Pamela","5pm–10pm"],["Mayreni","5pm–10pm"]], off:[]},          // Sáb
+  {trabajan:[["Pamela","9:45am–10pm"],["Mayreni","5pm–10pm"]], off:["Loreny"]}                        // Dom
+];
+
+// Una entrada por semana (lunes a domingo). Si el mes tiene meta mensual, "meta" y "m" de la semana se ignoran. dias = días ya contados en la semana (1 a 7).
+// Cada día se actualiza la semana en curso con los acumulados.
+// diario (opcional): ventas de cada día, en orden lunes→domingo:
+//   {tienda: 1520.30, equipo:{Loreny: 410.20, Pamela: 388.00, Mayreni: 250.10}}
+const SEMANAS = [
+  {inicio:"2026-10-19", dias:3, meta:11394.81, ventas:2755.50, tips:68.62, diario:[
+    {tienda:1195.46, equipo:{Loreny:298.41, Pamela:453.27, Mayreni:435.73, Seleni:0}},  // Lun
+    {tienda:758.29,  equipo:{Loreny:452.98, Pamela:274.55, Mayreni:0,      Seleni:0}},  // Mar
+    {tienda:801.75,  equipo:{Loreny:218.16, Pamela:384.27, Mayreni:129.90, Seleni:17.00}} // Mié
+  ], equipo:[
+    {n:"Loreny",  v:969.55,  m:3485.47, t:18.75},
+    {n:"Pamela",  v:1112.09, m:3485.47, t:25.34},
+    {n:"Mayreni", v:565.63,  m:2278.96, t:24.53},
+    {n:"Seleni",  v:17.00,   m:2144.91, t:0}
+  ]},
+  {inicio:"2026-10-12", dias:7, meta:10463.38, ventas:10267.42, tips:185.60, equipo:[
+    {n:"Loreny",  v:2893.43, m:3139.01, t:62.23},
+    {n:"Pamela",  v:3188.84, m:3348.28, t:71.47},
+    {n:"Mayreni", v:1640.43, m:2511.21, t:33.84},
+    {n:"Valeria", v:432.16,  m:1464.87, t:3.15}
+  ]}
+];
+/* ----- CHALLENGE SEMANAL ----- */
+// Clave = lunes de la semana. avance = unidades vendidas por persona.
+const CHALLENGES = {
+  "2026-10-19": {titulo:"Challenge de las crepas", producto:"crepas", meta:21,
+    inicio:"2026-10-20", fin:"2026-10-25", cierre:"10:00 pm", finHora:22, premio:"$50 en Starbucks gift card",
+    condicion:"Vende 21 crepas o más y cumple tu meta individual de ventas semanal.",
+    avance:{Loreny:1, Pamela:4, Mayreni:2, Seleni:0}}
+};
+
+/* ----- COCINA (Food Menu: tienda + DoorDash) ----- */
+// dias: productos vendidos cada día, clave "AAAA-MM-DD". p = producto, u = unidades.
+//   "2026-10-21": [{p:"Tamal",u:14},{p:"Torta",u:9}]
+// meses: acumulado del mes. El mes en curso se actualiza; los cerrados no se tocan.
+const COCINA = {
+  mesActual: "2026-10",
+  dias: {
+    "2026-10-21": [{p:"Quesadilla",u:4},{p:"Tamal",u:3},{p:"Tacos (3)",u:2},{p:"Hot dog",u:2},{p:"Torta",u:1},{p:"Tostada",u:1},{p:"Medusa",u:1},{p:"Enchiladas",u:1}]
+  },
+  meses: {
+    "2026-10": {hasta:21, top:[
+      {p:"Tamal",u:254},{p:"Torta",u:108,nota:"incluye Torta Tuesday"},{p:"Quesadilla",u:80},{p:"Tacos (3)",u:69},
+      {p:"Torta Cubana",u:44},{p:"Hot dog",u:42},{p:"Hamburger Combo",u:37},{p:"Tostada",u:35},{p:"Burrito",u:31},{p:"Sope",u:30}]},
+    "2026-09": {top:[
+      {p:"Tamal",u:249},{p:"Torta",u:179,nota:"incluye Torta Tuesday"},{p:"Quesadilla",u:131},{p:"Tacos (3)",u:85},
+      {p:"Burrito",u:85},{p:"Hot dog",u:63},{p:"Hamburger Combo",u:49},{p:"Tacos de Cecina",u:43},{p:"Torta Cubana",u:40},{p:"Sope",u:40}]},
+    "2026-08": {top:[
+      {p:"Tamal",u:434},{p:"Tacos (3)",u:127},{p:"Quesadilla",u:127},{p:"Torta",u:115},{p:"Hot dog",u:85},
+      {p:"Hamburger Combo",u:75},{p:"Torta Cubana",u:63},{p:"Burrito",u:58},{p:"Tacos de Cecina",u:51},{p:"Sope",u:43}]}
+  }
+};
+/* ===== FIN DE DATOS ===== */
+
+const MESES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const MES_C=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const $=s=>document.querySelector(s);
+const money=n=>"$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const money0=n=>"$"+Math.round(n).toLocaleString("en-US");
+const pct=r=>(r*100).toFixed(1)+"%";
+const d=s=>{const [y,m,dd]=s.split("-").map(Number);return new Date(y,m-1,dd)};
+const add=(dt,n)=>new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()+n);
+const iso=dt=>dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const col=n=>"var(--"+((EQUIPO[n]||{}).color||"teal")+")";
+
+function weekLabel(w){
+  const a=d(w.inicio),b=add(a,6);
+  if(a.getMonth()===b.getMonth()) return a.getDate()+"–"+b.getDate()+" "+MES_C[a.getMonth()]+" "+b.getFullYear();
+  return a.getDate()+" "+MES_C[a.getMonth()]+" – "+b.getDate()+" "+MES_C[b.getMonth()]+" "+b.getFullYear();
+}
+// La semana cuenta en el mes donde caen la mayoría de sus días
+function monthKey(inicio){
+  const cnt={};const a=d(inicio);
+  for(let i=0;i<7;i++){const x=add(a,i);const k=x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0");cnt[k]=(cnt[k]||0)+1}
+  return Object.entries(cnt).sort((p,q)=>q[1]-p[1])[0][0];
+}
+function monthName(k){const [y,m]=k.split("-").map(Number);return MESES[m-1][0].toUpperCase()+MESES[m-1].slice(1)+" "+y}
+function mondaysIn(k){
+  const [y,m]=k.split("-").map(Number);let x=new Date(y,m-1,1);x=add(x,-((x.getDay()+6)%7)-7);
+  const out=[];for(let i=0;i<8;i++){const w=add(x,7*i);if(monthKey(iso(w))===k)out.push(iso(w))}return out;
+}
+function dayTxt(w){return w.dias===0?"por empezar":"día "+w.dias+" de 7"}
+function status(r){return r>=1?"ok":r>=.85?"warn":"bad"}
+
+// Aplica 1/4 de la meta mensual a cada semana del mes que la tenga
+function withMonthlyGoal(w){
+  const g=METAS_MENSUALES[monthKey(w.inicio)];
+  if(!g)return w;
+  const eq=g.equipo||{};
+  return {...w,meta:g.tienda/4,equipo:w.equipo.map(p=>eq[p.n]!=null?{...p,m:eq[p.n]/4}:p)};
+}
+const weeks=[...SEMANAS].map(withMonthlyGoal).sort((a,b)=>a.inicio<b.inicio?-1:1);
+const months=[...new Set(weeks.map(w=>monthKey(w.inicio)))];
+
+function aggregate(list){
+  const ppl={};let ventas=0,meta=0,tips=0,dias=0,metaPace=0;
+  list.forEach(w=>{ventas+=w.ventas;meta+=w.meta;tips+=w.tips;dias+=w.dias;metaPace+=w.meta*w.dias/7;
+    w.equipo.forEach(p=>{const o=ppl[p.n]||(ppl[p.n]={n:p.n,v:0,m:0,t:0});o.v+=p.v;o.m+=p.m;o.t+=p.t})});
+  return {ventas,meta,tips,dias,metaPace,equipo:Object.values(ppl)};
+}
+
+/* ---------- bloques ---------- */
+function storeBlock(a,{titulo,metaLabel,paceNote}){
+  const r=a.meta?a.ventas/a.meta:0, falta=Math.max(0,a.meta-a.ventas);
+  const paceR=a.metaPace?a.ventas/a.metaPace:0;
+  const enCurso=a.metaPace<a.meta-0.01;
+  const starting=a.dias===0;
+  const st=starting?"warn":enCurso?status(paceR):status(r);
+  const stTxt=starting?"Semana por empezar":enCurso?(paceR>=1?"Al ritmo de la meta":paceR>=.85?"Cerca del ritmo":"Por debajo del ritmo"):(r>=1?"Meta cumplida":r>=.85?"Muy cerca de la meta":"Meta no alcanzada");
+  const team=a.equipo.reduce((s,p)=>s+p.v,0), otras=a.ventas-team;
+  return `<section aria-labelledby="st"><h2 id="st">${titulo}</h2><p class="sub">${paceNote}</p>
+  <div class="store">
+    <div class="panel">
+      <div class="big"><span class="v num">${money(a.ventas)}</span><span class="of num">de ${money(a.meta)} · ${metaLabel}</span></div>
+      <div class="meter" role="img" aria-label="${pct(r)} de la meta"><div class="fill" style="width:${Math.min(100,r*100)}%"></div>${enCurso?`<div class="pace" style="left:calc(${Math.min(100,a.metaPace/a.meta*100)}% - 1px)" title="Donde deberíamos ir hoy"></div>`:""}</div>
+      <div class="meterlab"><span class="num"><b style="color:var(--ink)">${pct(r)}</b> de la meta</span><span class="pill ${st}">${stTxt}</span></div>
+      ${enCurso&&!starting?`<p class="note num">La raya marca dónde deberíamos ir con los días contados: ${money(a.metaPace)}. Vamos al ${pct(paceR)} de ese ritmo.</p>`:""}
+    </div>
+    <div class="panel facts">
+      <div class="fact"><span>Faltan</span><b class="num pink">${falta>0?money(falta):"¡Cumplida!"}</b></div>
+      <div class="fact"><span>Tips</span><b class="num">${money(a.tips)}</b></div>
+      <div class="fact"><span>Equipo<small>ventas del personal</small></span><b class="num">${money(team)}</b></div>
+      <div class="fact"><span>Otras ventas<small>tienda, online y gerencia</small></span><b class="num">${money(otras)}</b></div>
+    </div>
+  </div></section>`;
+}
+function teamBlock(people,titulo){
+  const list=[...people].sort((a,b)=>(b.v/b.m)-(a.v/a.m));
+  return `<section aria-labelledby="tm"><h2 id="tm">${titulo}</h2><p class="sub">Ordenado por porcentaje de la meta personal.</p>
+  <div class="team">${list.map((p,i)=>{const r=p.m?p.v/p.m:0,f=Math.max(0,p.m-p.v);return `
+    <article class="card">
+      <div class="hd"><span class="dot" style="background:${col(p.n)}">${esc(p.n[0])}</span><span class="nm">${esc(p.n)}</span><span class="rk ${i===0?"first":""}">#${i+1}</span></div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><span class="pct num" style="color:${col(p.n)}">${pct(r)}</span><span class="pill ${status(r)}">${r>=1?"Meta cumplida":"Le faltan "+money0(f)}</span></div>
+      <div class="bar"><i style="width:${Math.min(100,r*100)}%;background:${col(p.n)}"></i></div>
+      <dl class="rows num"><dt>Ventas</dt><dd>${money(p.v)}</dd><dt>Meta</dt><dd>${money(p.m)}</dd><dt>Le faltan</dt><dd>${money(f)}</dd><dt>Tips</dt><dd>${money(p.t)}</dd></dl>
+    </article>`}).join("")}</div></section>`;
+}
+function weeksTable(list){
+  return `<div class="tablewrap"><table class="num"><thead><tr><th>Semana</th><th>Ventas</th><th>Meta</th><th>%</th><th>Tips</th></tr></thead><tbody>
+  ${list.map(w=>{const r=w.ventas/w.meta;return `<tr><td>${weekLabel(w)}${w.dias<7?` <span class="pill warn">${dayTxt(w)}</span>`:""}</td><td>${money(w.ventas)}</td><td>${money(w.meta)}</td><td><span class="pill ${status(r)}">${pct(r)}</span></td><td>${money(w.tips)}</td></tr>`}).join("")}
+  </tbody></table></div>`;
+}
+function perfChart(people,titulo){
+  const list=[...people].filter(p=>p.m>0||p.v>0);
+  const W=760,H=290,L=64,R=14,T=34,B=44;
+  const max=Math.max(1,...list.map(p=>Math.max(p.v,p.m)))*1.1;
+  const step=[250,500,1000,2000,2500,5000,10000].find(s=>max/s<=6)||20000;
+  const top=Math.ceil(max/step)*step;
+  const y=v=>T+(H-T-B)*(1-v/top);
+  const bw=(W-L-R)/Math.max(1,list.length), barW=Math.min(84,bw*.5);
+  let g="";
+  for(let v=0;v<=top+0.01;v+=step){g+=`<line class="grid" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L-10}" y="${y(v)+4}" text-anchor="end">${v>=1000?"$"+(v/1000)+"k":"$"+v}</text>`}
+  list.forEach((p,i)=>{
+    const cx=L+bw*i+bw/2, r=p.m?p.v/p.m:0, c=col(p.n);
+    g+=`<rect x="${cx-barW/2}" y="${y(p.m)}" width="${barW}" height="${y(0)-y(p.m)}" rx="8" fill="var(--track)"/>`;
+    if(p.v>0)g+=`<rect x="${cx-barW/2}" y="${y(p.v)}" width="${barW}" height="${y(0)-y(p.v)}" rx="8" fill="${c}"><title>${esc(p.n)}: ${money(p.v)} de ${money(p.m)}</title></rect>`;
+    g+=`<line x1="${cx-barW/2-6}" x2="${cx+barW/2+6}" y1="${y(p.m)}" y2="${y(p.m)}" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>`;
+    g+=`<text class="lbl" x="${cx}" y="${y(Math.max(p.v,p.m))-20}" text-anchor="middle">${money(p.v)}</text>`;
+    g+=`<text class="ax" x="${cx}" y="${y(Math.max(p.v,p.m))-6}" text-anchor="middle">${pct(r)} de ${money0(p.m)}</text>`;
+    g+=`<text class="lbl" x="${cx}" y="${H-B+20}" text-anchor="middle">${esc(p.n.toUpperCase())}</text>`;
+  });
+  return `<section aria-labelledby="pf"><h2 id="pf">${titulo}</h2><p class="sub">Barra de color = lo vendido. Raya negra = la meta de cada persona.</p>
+    <div class="panel chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ventas de cada persona contra su meta">${g}</svg></div></section>`;
+}
+/* ---------- challenge ---------- */
+function chLeft(c){
+  const now=storeNow(), f=d(c.fin), end=c.finHora!=null?new Date(f.getFullYear(),f.getMonth(),f.getDate(),c.finHora):add(f,1), start=d(c.inicio), ms=end-now;
+  if(ms<=0)return "Terminó";
+  if(now<start)return "Empieza el "+start.getDate()+" de "+MESES[start.getMonth()];
+  const h=Math.floor(ms/36e5),dd=Math.floor(h/24),mm=Math.floor(ms/6e4)%60;
+  return `Quedan ${dd?dd+" día"+(dd>1?"s":"")+" ":""}${h%24} h ${mm} min`;
+}
+function challengeBlock(w){
+  const c=CHALLENGES[w.inicio];if(!c)return "";
+  const people=Object.entries(c.avance).map(([n,u])=>({n,u}));
+  people.sort((a,b)=>b.u-a.u||a.n.localeCompare(b.n));
+  let place=0,prev=null;people.forEach((p,i)=>{if(p.u!==prev){place=i+1;prev=p.u}p.place=p.u>0?place:null});
+  const start=d(c.inicio), left=chLeft(c);
+  const leader=people[0]&&people[0].u>0?people[0]:null;
+  const ord=n=>n+"°";
+  const rows=people.map(p=>{const pc=Math.min(1,p.u/c.meta), sp=w.equipo.find(x=>x.n===p.n), sr=sp&&sp.m?sp.v/sp.m:null, won=p.u>=c.meta&&(sr==null||sr>=1);
+    const slots=Array.from({length:c.meta},(_,i)=>`<i class="${i<p.u?"on":""}" style="${i<p.u?`background:${col(p.n)};border-color:${col(p.n)}`:""}"></i>`).join("");
+    return `<li class="ch-row${p.place===1?" lead":""}">
+      <span class="ch-place${p.place?" p"+Math.min(p.place,4):""}">${p.place?ord(p.place):"–"}</span>
+      <div class="ch-main"><div class="ch-top"><b>${esc(p.n)}</b><span class="num">${p.u} de ${c.meta}${won?" · ¡Completado!":""}</span></div>
+        ${sr!=null?`<div class="ch-req num">Meta de ventas semanal: ${pct(sr)} ${sr>=1?"✓":""}</div>`:""}
+        <div class="slots" role="img" aria-label="${p.u} de ${c.meta} ${esc(c.producto)}">${slots}</div></div>
+      <span class="ch-pct num">${Math.round(pc*100)}%</span></li>`}).join("");
+  return `<section aria-labelledby="chl"><h2 id="chl">${esc(c.titulo)}</h2>
+    <p class="sub">${c.condicion?esc(c.condicion)+" ":""}Del martes ${start.getDate()} al domingo ${d(c.fin).getDate()}${c.cierre?", cierre a las "+esc(c.cierre):" en la noche"}.</p>
+    <div class="panel ch">
+      <div class="ch-head">
+        <div class="ch-prize"><span>Premio</span><b>${esc(c.premio)}</b></div>
+        <div class="ch-leader"><span>Va de primero</span><b>${leader?esc(leader.n)+" · "+leader.u:"Nadie todavía"}</b></div>
+        <div class="ch-time"><span>Tiempo</span><b id="chLeft" data-wk="${w.inicio}">${left}</b></div>
+      </div>
+      <ol class="ch-list">${rows}</ol>
+    </div></section>`;
+}
+
+/* ---------- cocina ---------- */
+function prevMonth(k){const [y,m]=k.split("-").map(Number);const d0=new Date(y,m-2,1);return d0.getFullYear()+"-"+String(d0.getMonth()+1).padStart(2,"0")}
+function rankList(items,cmp,cmpLabel){
+  const max=Math.max(1,...items.map(i=>i.u),...(cmp?items.map(i=>cmp[i.p]||0):[]));
+  return `<ol class="rank">${items.map((it,i)=>{const c=cmp?cmp[it.p]:null;return `<li${i===0?' class="top1"':''}>
+    <span class="rn num">${i+1}</span>
+    <span class="pn">${esc(it.p)}${it.nota?`<small>${esc(it.nota)}</small>`:""}</span>
+    <span class="pb"><i style="width:${it.u/max*100}%"></i>${c?`<em style="left:${c/max*100}%" title="${cmpLabel}: ${c}"></em>`:""}</span>
+    <b class="num">${it.u}${c!=null&&c!==undefined?`<small>${cmpLabel}: ${c}</small>`:""}</b></li>`}).join("")}</ol>`;
+}
+function kitchenWeek(){
+  const now=storeNow(), mon=add(new Date(now.getFullYear(),now.getMonth(),now.getDate()),-((now.getDay()+6)%7));
+  const days=DIAS.map((dn,i)=>{const dt=add(mon,i);return {dn,dt,items:(COCINA.dias[iso(dt)]||[]).slice().sort((a,b)=>b.u-a.u)}});
+  const acc={};days.forEach(x=>x.items.forEach(it=>acc[it.p]=(acc[it.p]||0)+it.u));
+  const top=Object.entries(acc).map(([p,u])=>({p,u})).sort((a,b)=>b.u-a.u).slice(0,10);
+  const loaded=days.filter(x=>x.items.length).length;
+  $("#h1").textContent="Kitchen Update";
+  $("#period").textContent="Food Menu · semana "+weekLabel({inicio:iso(mon)});
+  const cards=days.map(x=>{const fut=x.dt>now&&iso(x.dt)!==iso(now);const tot=x.items.reduce((s,i)=>s+i.u,0);
+    return `<div class="kday${iso(x.dt)===iso(now)?" today":""}${!x.items.length?" none":""}"><div class="kh"><span class="dw">${x.dn}</span><span class="dn num">${x.dt.getDate()}</span>${tot?`<span class="kt num">${tot} uds</span>`:""}</div>
+      ${x.items.length?`<ul>${x.items.slice(0,5).map(it=>`<li><span>${esc(it.p)}</span><b class="num">${it.u}</b></li>`).join("")}</ul>`:`<p>${fut?"Por venir":"Sin datos"}</p>`}</div>`}).join("");
+  return `<section aria-labelledby="kw"><h2 id="kw">Más vendidos de la semana</h2><p class="sub">Acumulado de lunes a hoy${loaded?`, con ${loaded} día${loaded>1?"s":""} cargado${loaded>1?"s":""}`:""}.</p>
+    ${top.length?`<div class="panel">${rankList(top)}</div>`:`<div class="empty"><h3>La semana todavía no tiene datos</h3><p>Desde la próxima carga diaria aquí se van sumando los productos de la semana.</p></div>`}</section>
+    <section aria-labelledby="kd"><h2 id="kd">Día por día</h2><p class="sub">Los 5 productos más vendidos de cada día.</p><div class="kcal">${cards}</div></section>`;
+}
+function kitchenMonth(){
+  const k=COCINA.mesActual, m=COCINA.meses[k];
+  $("#h1").textContent="Kitchen Update";
+  $("#period").textContent="Food Menu · "+monthName(k)+(m&&m.hasta?" · del 1 al "+m.hasta:"");
+  if(!m)return `<div class="empty"><h3>Sin datos del mes</h3><p>Cuando llegue el primer acumulado del mes aparece aquí.</p></div>`;
+  const units=m.top.reduce((s,i)=>s+i.u,0);
+  return `<section aria-labelledby="km"><h2 id="km">Más vendidos del mes</h2><p class="sub">${monthName(k)}, unidades acumuladas${m.hasta?` del 1 al ${m.hasta}`:""}.</p>
+    <div class="kstats">
+      <div class="panel kstat"><span>Unidades del top 10</span><b class="num">${units.toLocaleString("en-US")}</b></div>
+      <div class="panel kstat"><span>Producto #1</span><b class="sm">${esc(m.top[0].p)} · ${m.top[0].u} uds</b></div>
+    </div>
+    <div class="panel" style="margin-top:14px">${rankList(m.top)}</div></section>`;
+}
+function kitchenHistory(){
+  const ks=Object.keys(COCINA.meses).filter(k=>k!==COCINA.mesActual).sort().reverse();
+  $("#h1").textContent="Kitchen History";
+  $("#period").textContent="Food Menu · meses cerrados";
+  if(!ks.length)return `<div class="empty"><h3>Todavía no hay meses cerrados</h3><p>Cada mes terminado se guarda aquí.</p></div>`;
+  const prods=[];ks.forEach(k=>COCINA.meses[k].top.forEach(x=>{if(!prods.includes(x.p))prods.push(x.p)}));
+  const rankOf=(k,p)=>{const i=COCINA.meses[k].top.findIndex(x=>x.p===p);return i<0?null:{r:i+1,u:COCINA.meses[k].top[i].u}};
+  prods.sort((a,b)=>{const ra=rankOf(ks[0],a),rb=rankOf(ks[0],b);return (ra?ra.r:99)-(rb?rb.r:99)});
+  const table=`<div class="tablewrap"><table class="num"><thead><tr><th>Producto</th>${ks.map(k=>`<th>${monthName(k)}</th>`).join("")}</tr></thead><tbody>
+    ${prods.map(p=>`<tr><td>${esc(p)}</td>${ks.map(k=>{const r=rankOf(k,p);return `<td>${r?`${r.u} <span class="rk2">#${r.r}</span>`:`<span class="pending">fuera del top</span>`}</td>`}).join("")}</tr>`).join("")}
+    <tr class="trow"><td>Total top 10</td>${ks.map(k=>`<td>${COCINA.meses[k].top.reduce((s,i)=>s+i.u,0)} uds</td>`).join("")}</tr></tbody></table></div>`;
+  const panels=ks.map(k=>`<div class="panel"><h3 class="kmh">${monthName(k)}<small class="num">${COCINA.meses[k].top.reduce((s,i)=>s+i.u,0)} uds</small></h3>${rankList(COCINA.meses[k].top)}</div>`).join("");
+  return `<section aria-labelledby="kh"><h2 id="kh">Comparación por mes</h2><p class="sub">Unidades vendidas y posición en el top 10 de cada mes.</p>${table}</section>
+    <section aria-labelledby="kp"><h2 id="kp">Top 10 de cada mes</h2><p class="sub">Meses cerrados. El mes en curso pasa aquí cuando termina.</p><div class="kmonths">${panels}</div></section>`;
+}
+
+// Hora de la tienda (Pennsylvania, hora del Este), igual para todos los que abran el tablero
+const TZ="America/New_York";
+function storeNow(){
+  const p=Object.fromEntries(new Intl.DateTimeFormat("en-US",{timeZone:TZ,year:"numeric",month:"numeric",day:"numeric",hour:"numeric",minute:"numeric",second:"numeric",hour12:false}).formatToParts(new Date()).map(x=>[x.type,x.value]));
+  return new Date(+p.year,+p.month-1,+p.day,+p.hour%24,+p.minute,+p.second);
+}
+const DIAS=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+function calendar(w){
+  const who=["Tienda",...w.equipo.map(p=>p.n)];
+  if(!who.includes(state.cal))state.cal="Tienda";
+  const sel=state.cal, person=w.equipo.find(p=>p.n===sel);
+  const goalDay=(sel==="Tienda"?w.meta:person.m)/7;
+  const daily=w.diario||[];
+  const val=i=>{const x=daily[i];if(!x)return null;const v=sel==="Tienda"?x.tienda:(x.equipo||{})[sel];return typeof v==="number"?v:null};
+  const vals=DIAS.map((_,i)=>val(i));
+  const loaded=vals.filter(v=>v!==null);
+  const best=loaded.length>1?vals.indexOf(Math.max(...loaded)):-1;
+  const a=d(w.inicio), todayIso=iso(storeNow());
+  const color=sel==="Tienda"?"var(--teal)":col(sel);
+  const cells=DIAS.map((dn,i)=>{
+    const dt=add(a,i), v=vals[i], future=i>=w.dias;
+    const cls=["day",i===best?"best":"",iso(dt)===todayIso?"today":"",future?"future":""].join(" ");
+    let body;
+    if(v!==null){const r=v/goalDay;body=`<div class="amt num">${money(v)}</div><div class="bar"><i style="width:${Math.min(100,r*100)}%;background:${color}"></i></div><div class="dp num">${pct(r)} de la meta del día</div>`}
+    else if(future){body=`<div class="amt">Por venir</div><div class="bar"></div><div class="dp">&nbsp;</div>`}
+    else{body=`<div class="amt">Sin detalle</div><div class="bar"></div><div class="dp">&nbsp;</div>`}
+    return `<div class="${cls}"><span class="dw">${dn}</span><span class="dn num">${dt.getDate()}</span>${body}${i===best?`<span class="tag">Mejor día</span>`:""}</div>`;
+  }).join("");
+  const total=loaded.reduce((s,v)=>s+v,0);
+  const foot=loaded.length
+    ?`<span class="num">Suma de ${loaded.length} día${loaded.length>1?"s":""} con detalle: <b style="color:var(--ink)">${money(total)}</b></span><span class="num">Meta del día: ${money(goalDay)} (meta semanal ÷ 7)</span>`
+    :`<span>Esta semana se cargó solo con el acumulado. El detalle por día aparece desde la próxima carga.</span><span class="num">Meta del día: ${money(goalDay)}</span>`;
+  return `<section aria-labelledby="cl"><h2 id="cl">Ventas por día</h2><p class="sub">Elige la tienda o una persona para ver cuánto se vendió cada día de la semana.</p>
+    <div class="chips" role="group" aria-label="Ver ventas de">${who.map(n=>`<button class="chip" data-cal="${esc(n)}" aria-pressed="${n===sel}">${esc(n)}</button>`).join("")}</div>
+    <div class="cal">${cells}</div><div class="calfoot">${foot}</div></section>`;
+}
+function summaryText(w){
+  const r=w.ventas/w.meta,f=Math.max(0,w.meta-w.ventas);
+  let t=`🍦 LA BAMBA · WEEKLY SALES UPDATE\nSemana: ${weekLabel(w)}${w.dias<7?` (${dayTxt(w)})`:""}\n\nVentas de la tienda: ${money(w.ventas)}\nMeta semanal: ${money(w.meta)}\nFaltan: ${money(f)} (${pct(r)} de la meta)\nTips: ${money(w.tips)}\n\nPROGRESO INDIVIDUAL`;
+  w.equipo.forEach(p=>{t+=`\n\n${(EQUIPO[p.n]||{}).emoji||"⭐"} ${p.n}\nVentas: ${money(p.v)}\nMeta: ${money(p.m)}\nLe faltan: ${money(Math.max(0,p.m-p.v))}\nTips: ${money(p.t)}`});
+  return t;
+}
+
+function notesBlock(){
+  const now=storeNow(), todayIso=iso(now), di=(now.getDay()+6)%7;
+  const DLARGO=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+  const list=NOTAS.filter(n=>!n.fecha||n.fecha===todayIso);
+  const h=HORARIO[di]||{};
+  const hasSched=HORARIO.some(x=>(x.off&&x.off.length)||(x.trabajan&&x.trabajan.length));
+  const offToday=h.off&&h.off.length?h.off.map(esc).join(", "):(hasSched?"Nadie":"Horario pendiente");
+  const tags=(arr,cls)=>arr&&arr.length?arr.map(n=>Array.isArray(n)?`<span class="${cls}"><b>${esc(n[0])}</b> ${esc(n[1])}</span>`:`<span class="${cls}">${esc(n)}</span>`).join(""):"<span class=\"pending\">—</span>";
+  const rows=DLARGO.map((dn,i)=>{const x=HORARIO[i]||{};return `<tr class="${i===di?"is-today":""}"><td>${dn}${i===di?" · hoy":""}</td><td>${tags(x.trabajan,"ontag")}</td><td>${tags(x.off,"offtag")}</td></tr>`}).join("");
+  return `<section aria-labelledby="nt"><h2 id="nt">Notas del equipo</h2><p class="sub">${DLARGO[di]} ${now.getDate()} de ${MESES[now.getMonth()]}.</p>
+    <div class="board">
+      <div style="display:grid;gap:10px;align-content:start">
+        <ul class="notes"><li>Off hoy: ${offToday}</li>${list.map(n=>`<li>${esc(n.texto)}${n.fecha?"<small>Solo hoy</small>":""}</li>`).join("")}</ul>
+      </div>
+      <div class="tablewrap"><table class="sched"><thead><tr><th>Día</th><th>Trabajan (front staff)</th><th>Off</th></tr></thead><tbody>${rows}</tbody></table></div>
+    </div></section>`;
+}
+
+/* ---------- vistas ---------- */
+let state={c:"semana",v:"semana",w:weeks.length?weeks[weeks.length-1].inicio:null,m:months[months.length-1],cal:"Tienda"};
+try{const s=JSON.parse(localStorage.getItem("labamba-view")||"null");if(s&&["semana","mes","cocina"].includes(s.v))state.v=s.v;if(s&&["semana","mes","historial"].includes(s.c))state.c=s.c}catch(e){}
+
+function picker(items,cur,key,label){
+  $("#sellab").textContent=label;
+  const s=$("#sel");s.dataset.k=key;
+  s.innerHTML=items.map(([val,lab])=>`<option value="${val}"${val===cur?" selected":""}>${lab}</option>`).join("");
+}
+function render(){
+  document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===state.v));
+  try{localStorage.setItem("labamba-view",JSON.stringify({v:state.v,c:state.c}))}catch(e){}
+  const V=$("#view");
+  if(state.v==="semana"){
+    picker([...weeks].reverse().map(w=>[w.inicio,weekLabel(w)+(w.dias<7?" · en curso":"")]),state.w,"w","Semana");
+    const w=weeks.find(x=>x.inicio===state.w);
+    $("#h1").textContent="Weekly Sales Update";
+    $("#period").textContent="Semana: "+weekLabel(w)+(w.dias<7?" · "+dayTxt(w):"");
+    const a=aggregate([w]);
+    const txt=summaryText(w);
+    V.innerHTML=perfChart(a.equipo,"Desempeño del equipo esta semana")+notesBlock()+challengeBlock(w)+teamBlock(a.equipo,"Resumen de ventas individual")+storeBlock(a,{titulo:"Ventas de la tienda",metaLabel:"meta semanal",paceNote:(w.dias===0?"La semana arranca hoy, todo en cero.":w.dias<7?`Llevamos ${w.dias} de 7 días contados.`:"Semana completa.")+(METAS_MENSUALES[monthKey(w.inicio)]?` La meta semanal es 1/4 de la meta de ${monthName(monthKey(w.inicio)).split(" ")[0].toLowerCase()}.`:"")})
+      +calendar(w)
+      +`<section aria-labelledby="rs"><h2 id="rs">Resumen para el grupo</h2><p class="sub">El mismo texto que mandamos con la imagen, listo para pegar.</p>
+        <div class="copybar"><button class="btn" id="copy">Copiar resumen</button><span class="copied" id="copied" hidden>Copiado</span></div>
+        <details id="sumbox"><summary>Ver texto</summary><pre id="sumtxt">${esc(txt)}</pre></details></section>`;
+    $("#copy").onclick=()=>{
+      const done=()=>{$("#copied").hidden=false;setTimeout(()=>$("#copied").hidden=true,2000)};
+      const fallback=()=>{$("#sumbox").open=true;const r=document.createRange();r.selectNodeContents($("#sumtxt"));const s=getSelection();s.removeAllRanges();s.addRange(r)};
+      try{navigator.clipboard.writeText(txt).then(done,fallback)}catch(e){fallback()}
+    };
+  } else if(state.v==="cocina"){
+    picker([["semana","Semana"],["mes","Mes"],["historial","Historial"]],state.c,"c","Ver");
+    V.innerHTML=state.c==="semana"?kitchenWeek():state.c==="mes"?kitchenMonth():kitchenHistory();
+  } else {
+    picker([...months].reverse().map(k=>[k,monthName(k)]),state.m,"m","Mes");
+    const list=weeks.filter(w=>monthKey(w.inicio)===state.m), all=mondaysIn(state.m);
+    $("#h1").textContent="Monthly Sales Update";
+    $("#period").textContent=monthName(state.m)+" · "+list.length+" de "+all.length+" semanas cargadas";
+    const a=aggregate(list);
+    const pend=all.length-list.length;
+    const g=METAS_MENSUALES[state.m];
+    let metaLabel="meta de las semanas cargadas", note;
+    if(g){
+      a.meta=g.tienda;metaLabel="meta mensual";
+      const eq=g.equipo||{};a.equipo.forEach(p=>{if(eq[p.n]!=null)p.m=eq[p.n]});
+      note=`Meta mensual de ${money(g.tienda)}. Cada semana lleva 1/4: ${money(g.tienda/4)}.`+(pend>0?` Faltan ${pend} semana${pend>1?"s":""} por cargar.`:" Todas las semanas del mes están cargadas.");
+    } else {
+      note=pend>0?`Este mes no tiene meta mensual fijada, así que la meta suma solo las semanas ya cargadas. Faltan ${pend} semana${pend>1?"s":""} por cargar.`:"Este mes no tiene meta mensual fijada. La meta es la suma de sus semanas.";
+    }
+    V.innerHTML=perfChart(a.equipo,"Desempeño del equipo en el mes")+notesBlock()+teamBlock(a.equipo,"Resumen de ventas individual")+storeBlock(a,{titulo:"Ventas del mes",metaLabel,paceNote:note})
+      +`<section aria-labelledby="wk"><h2 id="wk">Semana por semana</h2><p class="sub">Las semanas que cruzan de mes cuentan en el mes donde caen la mayoría de sus días.</p>${weeksTable(list)}</section>`;
+  }
+  const u=d(ULTIMA_ACTUALIZACION);
+  $("#foot").textContent="Última actualización: "+u.getDate()+" de "+MESES[u.getMonth()]+" de "+u.getFullYear()+". Good ice cream, better people.";
+}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{state.v=b.dataset.v;render()});
+$("#sel").addEventListener("change",e=>{state[e.target.dataset.k]=e.target.value;render()});
+$("#view").addEventListener("click",e=>{const c=e.target.closest("[data-cal]");if(!c)return;state.cal=c.dataset.cal;const y=scrollY;render();scrollTo(0,y)});
+render();
+let lastDay=iso(storeNow());
+function tick(){
+  const n=storeNow(), DL=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+  let h=n.getHours(),ap=h>=12?"pm":"am";h=h%12||12;
+  $("#clock").textContent=`${DL[n.getDay()]} ${n.getDate()} de ${MESES[n.getMonth()]} · ${h}:${String(n.getMinutes()).padStart(2,"0")} ${ap}`;
+  const cl=$("#chLeft");if(cl&&CHALLENGES[cl.dataset.wk])cl.textContent=chLeft(CHALLENGES[cl.dataset.wk]);
+  if(iso(n)!==lastDay){lastDay=iso(n);const y=scrollY;render();scrollTo(0,y)}
+}
+tick();setInterval(tick,15000);
+</script>
+
+<script>
+// Recarga la página cada 10 minutos para mostrar la última actualización
+setTimeout(function(){location.reload()},10*60*1000);
+</script>
+</html>
